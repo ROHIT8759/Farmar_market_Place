@@ -1,1 +1,0 @@
-print("Ahanas's part")
