@@ -1,0 +1,48 @@
+// app/(tabs)/_layout.tsx
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+
+export default function TabLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "#4CAF50",
+        tabBarInactiveTintColor: "#666",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopWidth: 1,
+          borderTopColor: "#e0e0e0",
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="chat"
+        options={{
+          //   title: "सहायक",
+          title: "chat",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "chatbubble" : "chatbubble-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="marketplace"
+        options={{
+          //   title: "बाज़ार",
+          title: "marketplace",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "storefront" : "storefront-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}
