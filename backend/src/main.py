@@ -2,11 +2,13 @@ from flask import Flask
 import sqlite3
 from flask_socketio import SocketIO
 from marketplace.routes import products_bp
+from home.routes import home_bp
 from chat.routes import chat_bp, socketio
 
 app = Flask(__name__)
 app.register_blueprint(products_bp, url_prefix="/products")
 app.register_blueprint(chat_bp, url_prefix="/chat")
+app.register_blueprint(home_bp, url_prefix="/")
 
 socketio.init_app(app, cors_allowed_origins="*")
 
