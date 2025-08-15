@@ -1,10 +1,11 @@
-// app/_layout.tsx
+import "./globals.css";
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,12 +34,14 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="dark" />
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
