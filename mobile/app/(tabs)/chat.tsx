@@ -23,7 +23,7 @@ interface Message {
 }
 
 // Create WebSocket connection (connect once)
-const socket = new WebSocket("ws://localhost:5000/");
+const socket = new WebSocket("ws://localhost:5000/chat/");
 
 socket.onopen = () => {
   console.log("✅ Connected to Flask WebSocket");
