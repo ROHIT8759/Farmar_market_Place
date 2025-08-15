@@ -22,28 +22,62 @@ interface Message {
   isLoading?: boolean;
 }
 
+// Create WebSocket connection (connect once)
+const socket = new WebSocket("ws://localhost:5000/");
+
+socket.onopen = () => {
+  console.log("✅ Connected to Flask WebSocket");
+};
+
+socket.onclose = () => {
+  console.log("❌ Disconnected from Flask WebSocket");
+};
+
+socket.onerror = (error) => {
+  console.error("⚠️ WebSocket error:", error);
+};
+
+// Store a pending resolver for the current request
+let pendingResolver: ((value: any) => void) | null = null;
+let pendingRejecter: ((reason?: any) => void) | null = null;
+
+// Handle incoming messages
+socket.onmessage = (event) => {
+  if (pendingResolver) {
+    try {
+      pendingResolver(JSON.parse(event.data));
+    } catch (err) {
+      pendingRejecter?.(err);
+    } finally {
+      pendingResolver = null;
+      pendingRejecter = null;
+    }
+  }
+};
+
 // API Service
 const sendMessageToFlask = async (message: string, sessionId?: string) => {
-  const response = await fetch("YOUR_FLASK_API_ENDPOINT/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message,
-      context: {
-        language: "english",
-        userId: "user123", // Replace with actual user ID
-        sessionId: sessionId || "new_session",
-      },
-    }),
+  return new Promise((resolve, reject) => {
+    if (socket.readyState !== WebSocket.OPEN) {
+      reject(new Error("WebSocket not connected"));
+      return;
+    }
+
+    // Save resolvers for the next incoming message
+    pendingResolver = resolve;
+    pendingRejecter = reject;
+
+    // Send message to backend
+    socket.send(
+      JSON.stringify({
+        message,
+        context: {
+          userId: "user123", // Replace with actual user ID
+          // sessionId: sessionId || "new_session",
+        },
+      })
+    );
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to send message");
-  }
-
-  return response.json();
 };
 
 // Message Component
@@ -86,7 +120,7 @@ const MessageBubble = ({ message }: { message: Message }) => {
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const [sessionId, setSessionId] = useState<string>("");
+  // const [sessionId, setSessionId] = useState<string>("");
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Initialize chat with welcome message
@@ -98,18 +132,18 @@ export default function Chat() {
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
-    setSessionId(`session_${Date.now()}`);
+    // setSessionId(`session_${Date.now()}`);
   }, []);
 
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: ({
       message,
-      sessionId,
-    }: {
+    }: // sessionId,
+    {
       message: string;
-      sessionId: string;
-    }) => sendMessageToFlask(message, sessionId),
+      // sessionId: string;
+    }) => sendMessageToFlask(message /*,sessionId*/),
     onSuccess: (response, { message: userMessage }) => {
       // Remove loading message and add actual response
       setMessages((prev) => {
@@ -171,7 +205,7 @@ export default function Chat() {
     // Send to Flask API
     sendMessageMutation.mutate({
       message: inputText.trim(),
-      sessionId,
+      // sessionId,
     });
 
     // Clear input
@@ -181,7 +215,7 @@ export default function Chat() {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [inputText, sessionId, sendMessageMutation]);
+  }, [inputText, /*sessionId,*/ sendMessageMutation]);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
