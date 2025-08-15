@@ -2,7 +2,7 @@
 
 import sqlite3
 
-DB_PATH = "database.db"  # Change path if needed
+DB_PATH = "./database.db"  # Change path if needed
 
 def insert_farmer_products():
     products = [
