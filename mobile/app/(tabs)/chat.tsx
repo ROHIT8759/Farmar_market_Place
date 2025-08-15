@@ -72,11 +72,9 @@ const sendMessageToFlask = async (message: string, sessionId?: string) => {
 
     // Send data to backend
     socket.send({
-      message,
-      context: {
-        userId: "user123", // Replace with actual user ID
-        // sessionId: sessionId || "new_session",
-      },
+      "userID": "user123", // Replace with actual user ID
+      // sessionId: sessionId || "new_session",
+      "context": message,
     });
   });
 };
