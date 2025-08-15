@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import {
   View,
   Text,
@@ -22,30 +23,32 @@ interface Message {
   isLoading?: boolean;
 }
 
-// Create WebSocket connection (connect once)
-const socket = new WebSocket("ws://localhost:5000/chat/");
+// Connect to Flask-SocketIO server
+const socket = io("http://localhost:5000/chat/", {
+  transports: ["websocket", "polling"], // fallback support
+});
 
-socket.onopen = () => {
-  console.log("✅ Connected to Flask WebSocket");
-};
+socket.on("connect", () => {
+  console.log("✅ Connected to Flask-SocketIO");
+});
 
-socket.onclose = () => {
-  console.log("❌ Disconnected from Flask WebSocket");
-};
+socket.on("disconnect", () => {
+  console.log("❌ Disconnected from Flask-SocketIO");
+});
 
-socket.onerror = (error) => {
-  console.error("⚠️ WebSocket error:", error);
-};
+socket.on("connect_error", (err: any) => {
+  console.error("⚠️ Socket.IO connection error:", err);
+});
 
 // Store a pending resolver for the current request
 let pendingResolver: ((value: any) => void) | null = null;
 let pendingRejecter: ((reason?: any) => void) | null = null;
 
-// Handle incoming messages
-socket.onmessage = (event) => {
+// Listen for generic 'message' events from server
+socket.on("message", (data: string) => {
   if (pendingResolver) {
     try {
-      pendingResolver(JSON.parse(event.data));
+      pendingResolver(typeof data === "string" ? JSON.parse(data) : data);
     } catch (err) {
       pendingRejecter?.(err);
     } finally {
@@ -53,13 +56,13 @@ socket.onmessage = (event) => {
       pendingRejecter = null;
     }
   }
-};
+});
 
 // API Service
 const sendMessageToFlask = async (message: string, sessionId?: string) => {
   return new Promise((resolve, reject) => {
-    if (socket.readyState !== WebSocket.OPEN) {
-      reject(new Error("WebSocket not connected"));
+    if (!socket.connected) {
+      reject(new Error("Socket.IO not connected"));
       return;
     }
 
@@ -67,16 +70,14 @@ const sendMessageToFlask = async (message: string, sessionId?: string) => {
     pendingResolver = resolve;
     pendingRejecter = reject;
 
-    // Send message to backend
-    socket.send(
-      JSON.stringify({
-        message,
-        context: {
-          userId: "user123", // Replace with actual user ID
-          // sessionId: sessionId || "new_session",
-        },
-      })
-    );
+    // Send data to backend
+    socket.send({
+      message,
+      context: {
+        userId: "user123", // Replace with actual user ID
+        // sessionId: sessionId || "new_session",
+      },
+    });
   });
 };
 
