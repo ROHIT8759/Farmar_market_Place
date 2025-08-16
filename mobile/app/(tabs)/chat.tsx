@@ -29,7 +29,7 @@ let socket: Socket | null = null;
 // Connect to Flask-SocketIO server
 const initializeSocket = () => {
   if (!socket) {
-    socket = io("http://localhost:5000/chat", {
+    socket = io("http://192.168.1.6:5000/chat", {
       transports: ["websocket", "polling"], // Fallback to polling if websocket fails
       timeout: 20000,
       reconnection: true,

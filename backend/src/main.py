@@ -15,4 +15,4 @@ socketio.init_app(app, cors_allowed_origins="*")
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)  # Run using socketio instead of app.run
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)  # Run using socketio instead of app.run
