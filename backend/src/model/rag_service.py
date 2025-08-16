@@ -122,41 +122,29 @@ def generate_answer(question: str) -> str:
             <|assistant|>
             """
             answer = hf_runnable.invoke(general_prompt)
-            source_note = " (based on general knowledge)"
         else:
             answer = document_answer
-            source_note = " (based on document)"
 
-        return f"AI{source_note}: {answer}"
+        return f"{answer}"
 
     except Exception as e:
         return f"Error: {str(e)}"
 
-# SocketIO client setup
-sio = socketio.Client()
-last_sent = None  # Track last sent message to avoid echo
+def generate_answer_without_rag(question: str):
+    """Generate an answer without using RAG (retrieval-augmented generation)"""
+    try:
+        # Use the Hugging Face model directly for general knowledge
+        general_prompt = f"""
+        <|system|>
+        You are an expert assistant. Answer the question using your general knowledge.
+        </s>
+        <|user|>
+        {question}</s>
+        <|assistant|>
+        """
+        answer = hf_runnable.invoke(general_prompt)
+        return f"{answer}"
 
-@sio.event
-def connect():
-    print("Connected to chat server. Waiting for messages...")
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-@sio.event
-def disconnect():
-    print("Disconnected from chat server.")
-
-@sio.on('message')
-def handle_message(msg):
-    global last_sent
-    if msg == last_sent:
-        last_sent = None  # Reset and ignore own message
-        return
-
-    print(f"Received question: {msg}")
-    answer = generate_answer(msg)
-    last_sent = answer  # Store before sending
-    sio.send(answer)
-    print(f"Sent response: {answer}")
-
-# Connect to the SocketIO server
-sio.connect(SERVER_URL)
-sio.wait()  # Keep the client running
