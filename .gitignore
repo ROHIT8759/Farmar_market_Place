@@ -105,3 +105,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Vector Database
+backend/model/collections
+backend/model/.deleted
+backend/model/.qdrant_fs_check
+backend/model/raft_state.json
+backend/model/aliases
+backend/model/data.xlsx
