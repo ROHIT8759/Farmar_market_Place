@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import {
   View,
   Text,
@@ -23,58 +23,81 @@ interface Message {
   isLoading?: boolean;
 }
 
+// Socket connection
+let socket: Socket | null = null;
+
 // Connect to Flask-SocketIO server
-const socket = io("http://localhost:5000/chat/", {
-  transports: ["websocket", "polling"], // fallback support
-});
+const initializeSocket = () => {
+  if (!socket) {
+    socket = io("http://localhost:5000/chat", {
+      transports: ["websocket", "polling"], // Fallback to polling if websocket fails
+      timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
-socket.on("connect", () => {
-  console.log("✅ Connected to Flask-SocketIO");
-});
+    socket.on("connect", () => {
+      console.log("✅ Connected to Flask-SocketIO /chat namespace");
+    });
 
-socket.on("disconnect", () => {
-  console.log("❌ Disconnected from Flask-SocketIO");
-});
+    socket.on("disconnect", (reason) => {
+      console.log("❌ Disconnected from Flask-SocketIO:", reason);
+    });
 
-socket.on("connect_error", (err: any) => {
-  console.error("⚠️ Socket.IO connection error:", err);
-});
+    socket.on("connect_error", (err: any) => {
+      console.error("⚠️ Socket.IO connection error:", err);
+    });
 
-// Store a pending resolver for the current request
-let pendingResolver: ((value: any) => void) | null = null;
-let pendingRejecter: ((reason?: any) => void) | null = null;
-
-// Listen for generic 'message' events from server
-socket.on("message", (data: string) => {
-  if (pendingResolver) {
-    try {
-      pendingResolver(typeof data === "string" ? JSON.parse(data) : data);
-    } catch (err) {
-      pendingRejecter?.(err);
-    } finally {
-      pendingResolver = null;
-      pendingRejecter = null;
-    }
+    socket.on("connection_response", (data) => {
+      console.log("Connection response:", data);
+    });
   }
-});
+  return socket;
+};
 
 // API Service
-const sendMessageToFlask = async (message: string, sessionId?: string) => {
+const sendMessageToFlask = async (
+  message: string
+  // sessionId?: string
+): Promise<any> => {
   return new Promise((resolve, reject) => {
-    if (!socket.connected) {
+    const socketInstance = initializeSocket();
+
+    if (!socketInstance.connected) {
       reject(new Error("Socket.IO not connected"));
       return;
     }
 
-    // Save resolvers for the next incoming message
-    pendingResolver = resolve;
-    pendingRejecter = reject;
+    // Set up one-time listener for response
+    const responseHandler = (data: string) => {
+      try {
+        const response = typeof data === "string" ? JSON.parse(data) : data;
+        resolve(response);
+      } catch (err) {
+        reject(err);
+      } finally {
+        socketInstance.off("message", responseHandler);
+      }
+    };
+
+    // Listen for response
+    socketInstance.on("message", responseHandler);
+
+    // Set timeout
+    const timeout = setTimeout(() => {
+      socketInstance.off("message", responseHandler);
+      reject(new Error("Request timeout"));
+    }, 30000); // 30 seconds timeout
+
+    // Clear timeout when response is received
+    socketInstance.on("message", () => clearTimeout(timeout));
 
     // Send data to backend
-    socket.send({
-      "userID": "user123", // Replace with actual user ID
+    socketInstance.send({
+      userID: "user123", // Replace with actual user ID
       // sessionId: sessionId || "new_session",
-      "context": message,
+      context: message,
     });
   });
 };
@@ -119,11 +142,20 @@ const MessageBubble = ({ message }: { message: Message }) => {
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [connectionStatus, setConnectionStatus] =
+    useState<string>("connecting");
   // const [sessionId, setSessionId] = useState<string>("");
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Initialize chat with welcome message
   useEffect(() => {
+    const socketInstance = initializeSocket();
+
+    // Update connection status
+    socketInstance.on("connect", () => setConnectionStatus("connected"));
+    socketInstance.on("disconnect", () => setConnectionStatus("disconnected"));
+    socketInstance.on("connect_error", () => setConnectionStatus("error"));
+
     const welcomeMessage: Message = {
       id: "welcome",
       text: "Hello! I'm your AI Farming Assistant 🌾\n\nI can help you with:\n• Crop care and cultivation\n• Pest and disease control\n• Soil management and testing\n• Fertilizers and nutrients\n• Weather and irrigation guidance\n• Market insights and pricing\n\nWhat farming question can I help you with today?",
@@ -143,7 +175,7 @@ export default function Chat() {
       message: string;
       // sessionId: string;
     }) => sendMessageToFlask(message /*,sessionId*/),
-    onSuccess: (response, { message: userMessage }) => {
+    onSuccess: (response) => {
       // Remove loading message and add actual response
       setMessages((prev) => {
         const withoutLoading = prev.filter((msg) => !msg.isLoading);
@@ -232,13 +264,23 @@ export default function Chat() {
         {/* Header */}
         <View className="bg-green-500 px-4 py-4 border-b border-green-600">
           <View className="flex-row items-center justify-center">
-            <View className="w-3 h-3 bg-green-300 rounded-full mr-2" />
+            <View
+              className={`w-3 h-3 rounded-full mr-2 ${
+                connectionStatus === "connected"
+                  ? "bg-green-300"
+                  : connectionStatus === "connecting"
+                  ? "bg-yellow-300"
+                  : "bg-red-300"
+              }`}
+            />
             <Text className="text-white text-lg font-bold">
               🤖 AI Farming Assistant
             </Text>
           </View>
           <Text className="text-green-100 text-center text-sm mt-1">
-            Your personal agricultural advisor
+            {connectionStatus === "connected"
+              ? "Your personal agricultural advisor"
+              : `Status: ${connectionStatus}`}
           </Text>
         </View>
 
