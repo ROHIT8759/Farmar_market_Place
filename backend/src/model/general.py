@@ -14,15 +14,22 @@ class HuggingFaceRunnable(Runnable):
         if not input:
             raise ValueError("No prompt text provided")
 
-        # Generate response (plain text)
-        response = self.client.text_generation(
-            input,
-            max_new_tokens=500,
-            do_sample=True,
-            temperature=0.7,
+    # Generate response (chat mode)
+        response = self.client.chat_completion(
+            messages=[{"role": "user", "content": input}],
+            max_tokens=500,
+            stream=False
         )
-
-        return response.strip()
+    
+        # Extract text from response object
+        if hasattr(response, "choices"):  # In case it's a dataclass-like object
+            content = response.choices[0].message["content"]
+        elif isinstance(response, dict):
+            content = response["choices"][0]["message"]["content"]
+        else:
+            raise ValueError(f"Unexpected response format: {response}")
+    
+        return content.strip()
     
 
 hf_runnable = HuggingFaceRunnable(client=client)
