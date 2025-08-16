@@ -15,11 +15,15 @@ def model(msg):
     context = msg.get("context")
     message = generate_answer_without_rag(context)
 
-    return {"userId": user_id, "message": message}
+    return {"userID": user_id, "context": message}
 
 # WebSocket event for chat
 @socketio.on("message", namespace="/chat")
 
 def handle_message(msg):
     message = model(msg)
-    send(json.dumps(message), namespace="/chat")
+    response_data = {
+        "answer": message,
+        "status": "success"
+    }
+    send(json.dumps(response_data), namespace="/chat")

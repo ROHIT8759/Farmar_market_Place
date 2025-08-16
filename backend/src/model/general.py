@@ -2,7 +2,7 @@ from huggingface_hub import InferenceClient
 from langchain_core.runnables import Runnable
 
 MODEL_NAME = "openai/gpt-oss-20b"   # replace with a text-generation model
-hf_token = "hf_your_token_here"
+hf_token = "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"
 
 client = InferenceClient(model=MODEL_NAME, token=hf_token)
 
