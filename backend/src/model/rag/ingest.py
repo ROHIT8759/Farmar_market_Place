@@ -27,7 +27,7 @@ COLUMN_NAMES = [
     "Sector",
     "Season",
     "Crop",
-    "Sl No. - Q",
+    "Sl No.-Q",
     "Question",
     "Sl No.-A",
     "Answer",
@@ -109,7 +109,7 @@ def main():
         "Sector",
         "Season",
         "Crop",
-        "Sl No. - Q",
+        "Sl No.-Q",
         "Sl No.-A",
     ]
     df["metadata"] = df[metadata_columns].to_dict(orient="records")

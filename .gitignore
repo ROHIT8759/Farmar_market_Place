@@ -107,9 +107,9 @@ Thumbs.db
 *.log
 
 # Vector Database
-backend/model/collections
-backend/model/.deleted
-backend/model/.qdrant_fs_check
-backend/model/raft_state.json
-backend/model/aliases
-backend/model/data.xlsx
+backend/src/model/collections
+backend/src/model/.deleted
+backend/src/model/.qdrant_fs_check
+backend/src/model/raft_state.json
+backend/src/model/aliases
+backend/src/model/data.xlsx
