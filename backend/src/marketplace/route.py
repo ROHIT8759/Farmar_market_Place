@@ -13,7 +13,7 @@ def get_db_connection():
     return conn
 
 # GET all products
-@products_bp.route("/", methods=["GET"]) # /products/
+@products_bp.route("/", methods=["GET"])
 def get_products():
     conn = get_db_connection()
     products = conn.execute("SELECT * FROM products").fetchall()
@@ -21,7 +21,7 @@ def get_products():
     return jsonify([dict(product) for product in products])
 
 # GET product by id
-@products_bp.route("/<int:product_id>", methods=["GET"]) # /products/<id>
+@products_bp.route("/<int:product_id>", methods=["GET"])
 def get_product(product_id):
     conn = get_db_connection()
     product = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
