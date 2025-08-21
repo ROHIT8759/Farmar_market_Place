@@ -27,9 +27,16 @@ app.register_blueprint(chat_bp, url_prefix="/chat")
 app.register_blueprint(user_bp, url_prefix="/user")
 app.register_blueprint(home_bp, url_prefix="/")
 
-socketio.init_app(app, cors_allowed_origins="*")
+socketio.init_app(app, cors_allowed_origins="*",
+                   logger=True,
+                     engineio_logger=True,
+                       async_mode="threading",
+                         ping_timeout=60,
+                           ping_interval=25,
+                             transports=["polling", "websocket"],
+                               allow_upgrades=True,
+                                 cookie=False)
 
 if __name__ == "__main__":
     print(f"Starting server at http://{localIP}:{port}")
-    socketio.run(app, host="0.0.0.0", port=port)
-    print("Server started successfully.")
+    socketio.run(app, host="0.0.0.0", port=port, debug=True, allow_unsafe_werkzeug=True)

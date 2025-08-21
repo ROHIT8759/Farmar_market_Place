@@ -29,12 +29,16 @@ let socket: Socket | null = null;
 // Connect to Flask-SocketIO server
 const initializeSocket = () => {
   if (!socket) {
-    socket = io("http://192.168.1.6:5000/chat", {
-      transports: ["websocket", "polling"], // Fallback to polling if websocket fails
-      timeout: 20000,
+    socket = io("http://192.168.1.8:5000/chat", {
+      transports: ["polling", "websocket"], // Fallback to polling if websocket fails
+      upgrade: false,
+      rememberUpgrade: false,
+      forceNew: true,
+      autoConnect: true,
+      timeout: 30000,
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
     });
 
     socket.on("connect", () => {
@@ -46,7 +50,13 @@ const initializeSocket = () => {
     });
 
     socket.on("connect_error", (err: any) => {
-      console.error("⚠️ Socket.IO connection error:", err);
+      // console.error("⚠️ Socket.IO connection error:", err);
+
+      console.error("⚠️ Connection failed:", {
+        message: err.message,
+        type: err.type,
+        description: err.description,
+      });
     });
 
     socket.on("connection_response", (data) => {
@@ -94,7 +104,7 @@ const sendMessageToFlask = async (
     socketInstance.on("message", () => clearTimeout(timeout));
 
     // Send data to backend
-    socketInstance.send({
+    socketInstance.emit("message", {
       userID: "user123", // Replace with actual user ID
       // sessionId: sessionId || "new_session",
       context: message,
@@ -107,10 +117,11 @@ const MessageBubble = ({ message }: { message: Message }) => {
   return (
     <View className={`mb-4 ${message.isUser ? "items-end" : "items-start"}`}>
       <View
-        className={`max-w-[80%] px-4 py-3 rounded-2xl ${message.isUser
+        className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+          message.isUser
             ? "bg-green-500 rounded-br-md"
             : "bg-gray-100 rounded-bl-md"
-          }`}
+        }`}
       >
         {message.isLoading ? (
           <View className="flex-row items-center">
@@ -119,8 +130,9 @@ const MessageBubble = ({ message }: { message: Message }) => {
           </View>
         ) : (
           <Text
-            className={`text-base leading-6 ${message.isUser ? "text-white" : "text-gray-800"
-              }`}
+            className={`text-base leading-6 ${
+              message.isUser ? "text-white" : "text-gray-800"
+            }`}
           >
             {message.text}
           </Text>
@@ -169,10 +181,10 @@ export default function Chat() {
     mutationFn: ({
       message,
     }: // sessionId,
-      {
-        message: string;
-        // sessionId: string;
-      }) => sendMessageToFlask(message /*,sessionId*/),
+    {
+      message: string;
+      // sessionId: string;
+    }) => sendMessageToFlask(message /*,sessionId*/),
     onSuccess: (response) => {
       setMessages((prev) => {
         const withoutLoading = prev.filter((msg) => !msg.isLoading);
@@ -183,8 +195,9 @@ export default function Chat() {
             text:
               typeof response.answer === "object"
                 ? response.answer.context
-                : response.answer || response.response ||
-                "I apologize, but I had trouble understanding that. Could you please rephrase your question?",
+                : response.answer ||
+                  response.response ||
+                  "I apologize, but I had trouble understanding that. Could you please rephrase your question?",
             isUser: false,
             timestamp: new Date(),
           },
@@ -263,12 +276,13 @@ export default function Chat() {
         <View className="bg-green-500 px-4 py-4 border-b border-green-600">
           <View className="flex-row items-center justify-center">
             <View
-              className={`w-3 h-3 rounded-full mr-2 ${connectionStatus === "connected"
+              className={`w-3 h-3 rounded-full mr-2 ${
+                connectionStatus === "connected"
                   ? "bg-green-300"
                   : connectionStatus === "connecting"
-                    ? "bg-yellow-300"
-                    : "bg-red-300"
-                }`}
+                  ? "bg-yellow-300"
+                  : "bg-red-300"
+              }`}
             />
             <Text className="text-white text-lg font-bold">
               🤖 AI Farming Assistant
@@ -316,10 +330,11 @@ export default function Chat() {
                 disabled={
                   inputText.trim().length === 0 || sendMessageMutation.isPending
                 }
-                className={`w-12 h-12 rounded-full items-center justify-center ${inputText.trim().length > 0 && !sendMessageMutation.isPending
+                className={`w-12 h-12 rounded-full items-center justify-center ${
+                  inputText.trim().length > 0 && !sendMessageMutation.isPending
                     ? "bg-green-500"
                     : "bg-gray-300"
-                  }`}
+                }`}
               >
                 {sendMessageMutation.isPending ? (
                   <ActivityIndicator size="small" color="white" />
