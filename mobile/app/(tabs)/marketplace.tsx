@@ -1,30 +1,10 @@
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, FlatList, Image, TouchableOpacity, StatusBar } from "react-native";
-
-const products = [
-  {
-    id: "1",
-    name: "Fresh Tomatoes",
-    price: 2.5,
-    image: require("../../assets/images/partial-react-logo.png"),
-  },
-  {
-    id: "2",
-    name: "Organic Potatoes",
-    price: 1.8,
-    image: require("../../assets/images/partial-react-logo.png"),
-  },
-  {
-    id: "3",
-    name: "Farm Eggs (12pcs)",
-    price: 3.0,
-    image: require("../../assets/images/partial-react-logo.png"),
-  },
-];
+import { products, Product } from "../data/products";
 
 const Marketplace = () => {
-  const renderItem = ({ item }: any) => (
+  const renderItem = ({ item }: { item: Product }) => (
     <View
       style={{
         flexDirection: "row",
@@ -46,6 +26,9 @@ const Marketplace = () => {
       />
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>{item.name}</Text>
+        <Text style={{ fontSize: 14, color: "#666", marginVertical: 2 }}>
+          {item.description}
+        </Text>
         <Text style={{ fontSize: 16, color: "#4CAF50", marginVertical: 4 }}>
           ${item.price.toFixed(2)}
         </Text>
@@ -74,7 +57,7 @@ const Marketplace = () => {
         </Text>
         <FlatList
           data={products}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item: Product) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
         />
